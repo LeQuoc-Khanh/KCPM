@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --background-image-gradient-radial: radial-gradient(var(--tw-gradient-stops));
+  --background-image-gradient-conic: conic-gradient(
+    from 180deg at 50% 50%,
+    var(--tw-gradient-stops)
+  );
+}
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: #f8fafc;
+}
+
+/* --- THÊM PHẦN NÀY ĐỂ FIX LỖI THÔNG BÁO --- */
+@layer utilities {
+  /* Animation khi thông báo hiện ra: Trượt từ trên xuống và hiện dần */
+  .animate-enter {
+    animation: enter 0.5s ease-out forwards;
+  }
+
+  /* Animation khi thông báo ẩn đi: Mờ dần và trượt lên */
+  .animate-leave {
+    animation: leave 0.3s ease-in forwards;
+  }
+}
+
+/* Định nghĩa Keyframes cho animation */
+@keyframes enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes leave {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}

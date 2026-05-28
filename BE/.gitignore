@@ -1,0 +1,66 @@
+# =========================
+# Java
+# =========================
+*.class
+*.log
+*.ctxt
+
+# =========================
+# Maven
+# =========================
+target/
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.properties
+
+# =========================
+# IDE - IntelliJ IDEA
+# =========================
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# =========================
+# IDE - VS Code
+# =========================
+.vscode/
+.history/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Environment / Config
+# =========================
+.env
+
+application.properties
+application.yml
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Build / Generated
+# =========================
+generated-sources/
+generated-test-sources/
+
+# =========================
+# Others
+# =========================
+*.swp
+*.bak
+*.tmp
+# =========================
+# kết quả build
+# =========================
+*.class
