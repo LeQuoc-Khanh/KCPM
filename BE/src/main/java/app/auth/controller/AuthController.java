@@ -25,18 +25,32 @@ public class AuthController {
     private final AuthService authService;
 
     /**
-     * ĐĂNG KÝ
+     * ĐĂNG KÝ (Raw JSON)
+     * Endpoint này nhận raw JSON giống như login, dễ test với Postman
      */
-    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MessageResponse> register(
+    @PostMapping("/register")
+    public ResponseEntity<MessageResponse> register(@Valid @RequestBody RegisterRequest request) {
+        log.info("Register request received for email: {}", request.getEmail());
+        AuthResponse authData = authService.register(request, null);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(MessageResponse.success("Đăng ký thành công. Vui lòng kiểm tra email để xác thực.", authData));
+    }
+
+    /**
+     * ĐĂNG KÝ VỚI AVATAR (Form-data)
+     * Endpoint này dành cho frontend upload avatar cùng lúc với đăng ký
+     */
+    @PostMapping(value = "/register-with-avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MessageResponse> registerWithAvatar(
             @RequestPart("request") @Valid RegisterRequest request,
             @RequestPart(value = "avatar", required = false) MultipartFile avatar
     ) {
-        log.info("Register request received for email: {}", request.getEmail());
-        authService.register(request, avatar);
+        log.info("Register with avatar request received for email: {}", request.getEmail());
+        AuthResponse authData = authService.register(request, avatar);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(MessageResponse.success("Đăng ký thành công. Vui lòng kiểm tra email để xác thực."));
+                .body(MessageResponse.success("Đăng ký thành công. Vui lòng kiểm tra email để xác thực.", authData));
     }
 
     /**
