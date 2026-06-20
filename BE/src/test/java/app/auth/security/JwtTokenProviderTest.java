@@ -1,10 +1,12 @@
 package app.auth.security;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class JwtTokenProviderTest {
 
@@ -38,4 +40,29 @@ class JwtTokenProviderTest {
 
         assertFalse(result);
     }
+    @Test
+    void generateRefreshToken_shouldReturnValidToken() {
+        String token = jwtTokenProvider.generateRefreshToken("candidate@test.com");
+
+        assertNotNull(token);
+        assertTrue(jwtTokenProvider.validateToken(token));
+        assertEquals("candidate@test.com", jwtTokenProvider.getEmailFromToken(token));
+    }
+
+    @Test
+    void validateToken_shouldReturnFalse_whenTokenIsEmpty() {
+        boolean result = jwtTokenProvider.validateToken("");
+
+        assertFalse(result);
+    }
+
+    @Test
+    void getEmailFromToken_shouldReturnEmail_whenTokenIsValid() {
+        String token = jwtTokenProvider.generateAccessToken("candidate@test.com");
+
+        String email = jwtTokenProvider.getEmailFromToken(token);
+
+        assertEquals("candidate@test.com", email);
+    }
 }
+
