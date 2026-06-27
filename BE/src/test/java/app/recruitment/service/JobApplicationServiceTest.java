@@ -697,4 +697,242 @@ void TC315_defaultMatchScoreWhenNoAnalysisExists() {
     verify(analysisResultRepo)
             .findByUserIdAndJobPostingId(1L,10L);
 }
+
+// TC3.16 - Apply duplicated job
+@Test
+void TC316_applyDuplicateJobShouldThrowException() {
+
+    User candidate = User.builder()
+            .id(1L)
+            .fullName("Kiet")
+            .build();
+
+    User recruiter = User.builder()
+            .id(2L)
+            .build();
+
+    JobPosting job = JobPosting.builder()
+            .id(10L)
+            .title("Java Developer")
+            .recruiter(recruiter)
+            .build();
+
+    JobApplicationRequest request = new JobApplicationRequest();
+    request.setJobId(10L);
+    request.setCvUrl("cv.pdf");
+
+    when(userRepository.findById(1L))
+            .thenReturn(Optional.of(candidate));
+
+    when(jobRepo.findById(10L))
+            .thenReturn(Optional.of(job));
+
+    // Candidate already applied
+    when(appRepo.existsByCandidateIdAndJobPostingId(1L, 10L))
+            .thenReturn(true);
+
+    IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> service.apply(1L, request)
+    );
+
+    assertEquals("Bạn đã ứng tuyển công việc này rồi.", exception.getMessage());
+
+    verify(appRepo, never()).save(any(JobApplication.class));
+}
+
+@Test
+void TC317_applyInvalidJobId() {
+
+    User candidate = User.builder()
+            .id(1L)
+            .build();
+
+    JobApplicationRequest request = new JobApplicationRequest();
+    request.setJobId(999L);
+    request.setCvUrl("cv.pdf");
+
+    when(userRepository.findById(1L))
+            .thenReturn(Optional.of(candidate));
+
+    when(jobRepo.findById(999L))
+            .thenReturn(Optional.empty());
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> service.apply(1L, request)
+    );
+}
+
+@Test
+void TC318_applyInvalidCandidateId() {
+
+    JobApplicationRequest request = new JobApplicationRequest();
+    request.setJobId(10L);
+
+    when(userRepository.findById(999L))
+            .thenReturn(Optional.empty());
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> service.apply(999L, request)
+    );
+}
+
+// TC3.19 - Apply without uploaded CV and profile has no CV
+@Test
+void TC319_applyWithoutUploadedCvAndProfileHasNoCv() {
+
+    User candidate = User.builder()
+            .id(1L)
+            .fullName("Kiet")
+            .build();
+
+    User recruiter = User.builder()
+            .id(2L)
+            .build();
+
+    JobPosting job = JobPosting.builder()
+            .id(10L)
+            .title("Java Developer")
+            .recruiter(recruiter)
+            .build();
+
+    JobApplicationRequest request = new JobApplicationRequest();
+    request.setJobId(10L);
+    request.setCvUrl(null); // Candidate does not upload CV
+
+    when(userRepository.findById(1L))
+            .thenReturn(Optional.of(candidate));
+
+    when(jobRepo.findById(10L))
+            .thenReturn(Optional.of(job));
+
+    when(appRepo.existsByCandidateIdAndJobPostingId(1L, 10L))
+            .thenReturn(false);
+
+    // Candidate profile exists but has no CV
+    CandidateProfile profile = new CandidateProfile();
+    profile.setCvFilePath(null);
+
+    when(profileRepository.findByUserId(1L))
+            .thenReturn(Optional.of(profile));
+
+    IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> service.apply(1L, request)
+    );
+
+    assertEquals(
+            "Vui lòng upload CV hoặc cập nhật hồ sơ trước khi ứng tuyển.",
+            exception.getMessage()
+    );
+
+    verify(appRepo, never()).save(any(JobApplication.class));
+}
+
+// TC3.20 - Recruiter without permission cannot update application status
+@Test
+void TC320_updateStatusByUnauthorizedRecruiterShouldThrowException() {
+
+    User recruiter = User.builder()
+            .id(2L)
+            .fullName("Recruiter A")
+            .build();
+
+    JobPosting job = JobPosting.builder()
+            .id(10L)
+            .title("Java Developer")
+            .recruiter(recruiter)
+            .build();
+
+    JobApplication application = JobApplication.builder()
+            .id(100L)
+            .jobPosting(job)
+            .build();
+
+    when(appRepo.findById(100L))
+            .thenReturn(Optional.of(application));
+
+    IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> service.updateStatus(
+                    99L, // Recruiter khác, không phải người đăng job
+                    100L,
+                    ApplicationStatus.INTERVIEW,
+                    "Interview candidate"
+            )
+    );
+
+    assertEquals(
+            "Không có quyền chỉnh sửa đơn ứng tuyển này.",
+            exception.getMessage()
+    );
+
+    verify(appRepo, never()).save(any(JobApplication.class));
+}
+
+@Test
+void TC321_updateStatusApplicationNotFound() {
+
+    when(appRepo.findById(999L))
+            .thenReturn(Optional.empty());
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> service.updateStatus(
+                    1L,
+                    999L,
+                    ApplicationStatus.INTERVIEW,
+                    "")
+    );
+}
+
+@Test
+void TC322_getDetailApplicationNotFound() {
+
+    when(appRepo.findById(999L))
+            .thenReturn(Optional.empty());
+
+    assertThrows(
+            IllegalArgumentException.class,
+            () -> service.getDetail(999L)
+    );
+}
+
+@Test
+void TC323_hasAppliedFalse() {
+
+    when(appRepo.existsByCandidateIdAndJobPostingId(1L,10L))
+            .thenReturn(false);
+
+    assertFalse(service.hasApplied(1L,10L));
+}
+
+@Test
+void TC324_getApplicationsEmpty() {
+
+    when(appRepo.findByCandidateId(1L))
+            .thenReturn(List.of());
+
+    List<JobApplicationResponse> result =
+            service.getApplicationsByCandidateId(1L);
+
+    assertTrue(result.isEmpty());
+}
+
+@Test
+void TC325_listApplicantsEmpty() {
+
+    when(jobRepo.existsById(10L))
+            .thenReturn(true);
+
+    when(appRepo.findByJobPostingId(10L))
+            .thenReturn(List.of());
+
+    List<JobApplicationResponse> result =
+            service.listByJob(10L);
+
+    assertTrue(result.isEmpty());
+}
 }
