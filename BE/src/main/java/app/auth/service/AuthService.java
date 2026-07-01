@@ -110,7 +110,7 @@ public class AuthService {
         }
         emailService.sendVerificationEmail(user.getEmail(), verificationCode);
         
-        log.info("User registered successfully via email, waiting for verification: {}", user.getId());
+        log.info("Người dùng đã đăng ký thành công qua email, đang chờ xác minh: {}", user.getId());
         
         String accessToken = jwtTokenProvider.generateAccessToken(user.getEmail());
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
@@ -137,7 +137,7 @@ public class AuthService {
         user.setVerificationCode(null);
         userRepository.save(user);
         
-        log.info("User verified email successfully: {}", email);
+        log.info("Người dùng đã xác thực email thành công: {}", email);
     }
     
     // --- [MỚI] GỬI LẠI MÃ XÁC THỰC ---

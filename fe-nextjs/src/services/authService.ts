@@ -13,26 +13,31 @@ import {
 } from "@/utils/authStorage";
 
 // --- ĐĂNG KÝ ---
-// Giữ nguyên logic Multipart, trả về BackendResponse
+// Nếu không có avatar: gửi JSON đến /register
+// Nếu có avatar: gửi form-data đến /register-with-avatar
 export const register = async (
   data: RegisterRequest,
   avatarFile?: File | null
 ): Promise<BackendResponse<AuthResponseData>> => {
+  // Nếu không có avatar, gửi raw JSON (đơn giản)
+  if (!avatarFile) {
+    const response = await api.post<BackendResponse<AuthResponseData>>(
+      "/auth/register",
+      data
+    );
+    return response.data;
+  }
+
+  // Nếu có avatar, gửi form-data đến endpoint khác
   const formData = new FormData();
-  
-  // Đóng gói JSON vào Blob
   formData.append(
     "request",
     new Blob([JSON.stringify(data)], { type: "application/json" })
   );
-
-  // Đính kèm file ảnh nếu có
-  if (avatarFile) {
-    formData.append("avatar", avatarFile);
-  }
+  formData.append("avatar", avatarFile);
 
   const response = await api.post<BackendResponse<AuthResponseData>>(
-    "/auth/register",
+    "/auth/register-with-avatar",
     formData,
     {
       headers: {
