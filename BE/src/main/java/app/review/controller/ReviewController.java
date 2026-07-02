@@ -2,7 +2,6 @@ package app.review.controller;
 
 import app.review.dto.ReviewRequest;
 import app.review.service.ReviewService;
-import app.util.SecurityUtils; // Sử dụng file utility có sẵn của bạn
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

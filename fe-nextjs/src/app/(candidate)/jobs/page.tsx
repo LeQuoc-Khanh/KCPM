@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useAuth } from "@/context/Authcontext";
 import * as candidateService from "@/services/candidateService";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default function JobsPage() {
+function JobsPageContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -480,5 +480,21 @@ export default function JobsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-white p-6 rounded-xl shadow-sm animate-pulse h-48" />
+          </div>
+        </div>
+      }
+    >
+      <JobsPageContent />
+    </Suspense>
   );
 }

@@ -108,7 +108,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function ViolationReportsPage() {
+function ViolationReportsContent() {
   const router = useRouter();
   const sp = useSearchParams();
 
@@ -516,5 +516,21 @@ const paginationText = useMemo(() => {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ViolationReportsPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="rounded-xl border bg-white p-6 text-sm text-gray-500">
+            Đang tải báo cáo vi phạm...
+          </div>
+        </div>
+      }
+    >
+      <ViolationReportsContent />
+    </React.Suspense>
   );
 }
