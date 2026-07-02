@@ -306,7 +306,7 @@ function ChangeRoleModal({
   );
 }
 
-export default function UserManagementPage() {
+function UserManagementContent() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -722,5 +722,21 @@ export default function UserManagementPage() {
         loading={roleSaving}
       />
     </div>
+  );
+}
+
+export default function UserManagementPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="rounded-xl border bg-white p-6 text-sm text-gray-500">
+            Đang tải danh sách người dùng...
+          </div>
+        </div>
+      }
+    >
+      <UserManagementContent />
+    </React.Suspense>
   );
 }
