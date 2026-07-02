@@ -33,6 +33,7 @@ public class AuthResponse {
     /**
      * tokenType: Loại token, mặc định là "Bearer" (chuẩn OAuth 2.0).
      */
+    @Builder.Default
     private String tokenType = "Bearer";
     
     /**
