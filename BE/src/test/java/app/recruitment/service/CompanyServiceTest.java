@@ -52,9 +52,9 @@ class CompanyServiceTest {
         mockRequest.setDescription("Nền tảng AI tuyển dụng");
         mockRequest.setWebsite("https://careermate.com");
         mockRequest.setSize("100-500 nhân viên"); 
-
     }
 
+    // TC_4.1 View company profile successfully
     @Test
     void testGetMyCompany_Success() {
         when(companyRepository.findByRecruiterId(1L)).thenReturn(Optional.of(mockCompany));
@@ -66,20 +66,31 @@ class CompanyServiceTest {
         verify(companyRepository, times(1)).findByRecruiterId(1L);
     }
 
+    // TC_4.2 Update company profile successfully
     @Test
     void testUpdateCompany_ExistingCompany_Success() {
-        // Giả lập DB tìm thấy công ty và lưu thành công
         when(companyRepository.findByRecruiterId(1L)).thenReturn(Optional.of(mockCompany));
         when(companyRepository.save(any(Company.class))).thenAnswer(i -> i.getArguments()[0]);
 
         Company updatedCompany = companyService.updateCompany(1L, mockRequest);
 
-        // Kiểm tra xem dữ liệu có được cập nhật đúng từ request không
         assertNotNull(updatedCompany);
         assertEquals("Tech CareerMate Inc.", updatedCompany.getName());
         assertEquals("Nền tảng AI tuyển dụng", updatedCompany.getDescription());
         assertEquals("100-500 nhân viên", updatedCompany.getSize());
         
         verify(companyRepository, times(1)).save(any(Company.class));
+    }
+
+    // TC_4.3: Upload company logo/cover image
+    @Test
+    void testUpdateCompanyImage_Success() {
+        mockRequest.setLogoUrl("https://cloudinary.com/logo.png");
+        when(companyRepository.findByRecruiterId(1L)).thenReturn(Optional.of(mockCompany));
+        when(companyRepository.save(any(Company.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        Company updatedCompany = companyService.updateCompany(1L, mockRequest);
+        
+        assertEquals("https://cloudinary.com/logo.png", updatedCompany.getLogoUrl());
     }
 }
