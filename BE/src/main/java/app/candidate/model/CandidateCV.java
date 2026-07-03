@@ -25,7 +25,6 @@ public class CandidateCV {
 
     private String cvTitle;
 
-    @Lob
     @Column(columnDefinition = "TEXT")
     private String cvDataJson;
     private String templateType;

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +23,7 @@ public class CandidateCVController {
     @Autowired
     private UserRepository userRepository;
 
-    // Lưu hoặc Cập nhật CV
+    // Save or update CV
     @PostMapping("/save")
     public ResponseEntity<?> saveCV(@RequestBody Map<String, Object> payload) {
         String email = SecurityUtils.getCurrentUserLogin().orElseThrow(() -> new RuntimeException("Unauthorized"));
@@ -45,21 +46,66 @@ public class CandidateCVController {
         cv.setTemplateType(templateType);
         cv.setCvDataJson(cvDataJson);
 
-        cvRepository.save(cv);
-        return ResponseEntity.ok(cv);
+        CandidateCV savedCv = cvRepository.save(cv);
+        return ResponseEntity.ok(CandidateCVDetailResponse.from(savedCv));
     }
 
-    // Lấy danh sách CV của User
+    // Return only CV metadata for list view to avoid serializing large/lazy fields.
     @GetMapping("/my-cvs")
-    public ResponseEntity<List<CandidateCV>> getMyCVs() {
+    public ResponseEntity<List<CandidateCVSummaryResponse>> getMyCVs() {
         String email = SecurityUtils.getCurrentUserLogin().orElseThrow(() -> new RuntimeException("Unauthorized"));
         User user = userRepository.findByEmail(email).orElseThrow();
-        return ResponseEntity.ok(cvRepository.findByUserId(user.getId()));
+
+        List<CandidateCVSummaryResponse> response = cvRepository.findByUserId(user.getId())
+                .stream()
+                .map(CandidateCVSummaryResponse::from)
+                .toList();
+
+        return ResponseEntity.ok(response);
     }
 
-    // Lấy chi tiết 1 CV
+    // Return full CV data for detail view.
     @GetMapping("/{id}")
-    public ResponseEntity<CandidateCV> getCV(@PathVariable Long id) {
-        return ResponseEntity.ok(cvRepository.findById(id).orElseThrow());
+    public ResponseEntity<CandidateCVDetailResponse> getCV(@PathVariable Long id) {
+        CandidateCV cv = cvRepository.findById(id).orElseThrow();
+        return ResponseEntity.ok(CandidateCVDetailResponse.from(cv));
+    }
+
+    public record CandidateCVSummaryResponse(
+            Long id,
+            String cvTitle,
+            String templateType,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
+    ) {
+        public static CandidateCVSummaryResponse from(CandidateCV cv) {
+            return new CandidateCVSummaryResponse(
+                    cv.getId(),
+                    cv.getCvTitle(),
+                    cv.getTemplateType(),
+                    cv.getCreatedAt(),
+                    cv.getUpdatedAt()
+            );
+        }
+    }
+
+    public record CandidateCVDetailResponse(
+            Long id,
+            String cvTitle,
+            String templateType,
+            String cvDataJson,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
+    ) {
+        public static CandidateCVDetailResponse from(CandidateCV cv) {
+            return new CandidateCVDetailResponse(
+                    cv.getId(),
+                    cv.getCvTitle(),
+                    cv.getTemplateType(),
+                    cv.getCvDataJson(),
+                    cv.getCreatedAt(),
+                    cv.getUpdatedAt()
+            );
+        }
     }
 }
