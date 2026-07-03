@@ -21,6 +21,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import app.admin.service.SystemSettingService;
+import app.auth.dto.response.MessageResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Arrays;
 import java.util.List;
@@ -46,6 +49,14 @@ public class SecurityConfig {
             // Xử lý lỗi 401 Unauthorized
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint(authEntryPoint)
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    new ObjectMapper().writeValue(
+                            response.getWriter(),
+                            MessageResponse.error("Forbidden: Access is denied")
+                    );
+                })
             )
             // Quản lý session stateless
             .sessionManagement(session -> session
