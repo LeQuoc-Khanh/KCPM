@@ -1,4 +1,4 @@
-package app.auth.service;
+package app.auth.security.service;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -52,6 +52,10 @@ import app.auth.repository.CompanyRepository;
 import app.auth.repository.PasswordResetTokenRepository;
 import app.auth.repository.UserRepository;
 import app.auth.security.JwtTokenProvider;
+import app.auth.service.AuthService;
+import app.auth.service.EmailService;
+import app.auth.service.GoogleOAuthService;
+import app.auth.service.RefreshTokenService;
 import app.content.model.Company;
 import app.exception.MaintenanceModeException;
 import app.service.CloudinaryService;

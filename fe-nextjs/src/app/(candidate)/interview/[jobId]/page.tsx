@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 
-export default function InterviewRoomPage() {
+function InterviewRoomContent() {
   const params = useParams();
   const jobId = Number(params.jobId);
   const router = useRouter();
@@ -472,5 +472,21 @@ export default function InterviewRoomPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function InterviewRoomPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-blue-600 font-semibold animate-pulse">
+            Đang tải phòng phỏng vấn...
+          </div>
+        </div>
+      }
+    >
+      <InterviewRoomContent />
+    </React.Suspense>
   );
 }

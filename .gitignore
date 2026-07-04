@@ -22,3 +22,13 @@
 ### Mac OS ###
 .DS_Store
 .fake
+
+### Environment / database migration ###
+.env
+.env.*
+!.env.example
+scripts/db-migration/.env
+scripts/render-postgres-migration/.env
+scripts/render-postgres-migration/*.sql
+BE/src/main/resources/application-local.properties
+*.sql
