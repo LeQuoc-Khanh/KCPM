@@ -148,7 +148,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     @Override
     @Transactional
     public JobApplication updateStatus(Long recruiterId, Long applicationId, ApplicationStatus newStatus, String recruiterNote) {
-        JobApplication application = appRepo.findById(applicationId)
+        JobApplication application = appRepo.findByIdWithCandidateAndJobPosting(applicationId)
                 .orElseThrow(() -> new IllegalArgumentException("Application not found"));
 
         if (recruiterId != null && !application.getJobPosting().getRecruiter().getId().equals(recruiterId)) {
@@ -378,3 +378,4 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .build();
     }
 }
+
