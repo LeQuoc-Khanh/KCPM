@@ -18,6 +18,16 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
 
     Optional<JobApplication> findByCandidateIdAndJobPostingId(Long candidateId, Long jobPostingId);
 
+    @Query("""
+            SELECT a FROM JobApplication a
+            JOIN FETCH a.candidate
+            JOIN FETCH a.jobPosting jp
+            JOIN FETCH jp.recruiter
+            LEFT JOIN FETCH jp.company
+            WHERE a.id = :id
+            """)
+    Optional<JobApplication> findByIdWithCandidateAndJobPosting(@Param("id") Long id);
+
     long countByJobPostingRecruiterId(Long recruiterId);
 
     long countByJobPostingRecruiterIdAndAppliedAtAfter(Long recruiterId, LocalDateTime date);
