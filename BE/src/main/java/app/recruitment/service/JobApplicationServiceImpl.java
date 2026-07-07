@@ -13,6 +13,7 @@ import app.recruitment.entity.CVAnalysisResult;
 import app.recruitment.entity.JobApplication;
 import app.recruitment.entity.JobPosting;
 import app.recruitment.entity.enums.ApplicationStatus;
+import app.recruitment.entity.enums.JobStatus;
 import app.recruitment.repository.CVAnalysisResultRepository;
 import app.recruitment.repository.JobApplicationRepository;
 import app.recruitment.repository.JobPostingRepository;
@@ -56,6 +57,10 @@ public class JobApplicationServiceImpl implements JobApplicationService {
 
         JobPosting job = jobRepo.findById(request.getJobId())
                 .orElseThrow(() -> new IllegalArgumentException("Job not found: " + request.getJobId()));
+
+        if (EnumSet.of(JobStatus.DELETED, JobStatus.REJECTED, JobStatus.CLOSED).contains(job.getStatus())) {
+            throw new IllegalArgumentException("Cong viec nay da bi xoa hoac khong con nhan ho so.");
+        }
 
         if (appRepo.existsByCandidateIdAndJobPostingId(candidateId, job.getId())) {
             throw new IllegalArgumentException("Bạn đã ứng tuyển công việc này rồi.");
