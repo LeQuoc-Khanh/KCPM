@@ -98,7 +98,7 @@ public class JobPostingServiceImpl implements JobPostingService {
     @Override
     @Transactional
     public JobPosting update(Long recruiterId, Long jobId, JobPostingRequest request) {
-        JobPosting job = jobPostingRepository.findById(jobId)
+        JobPosting job = jobPostingRepository.findByIdWithRecruiterAndCompany(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("Job not found: " + jobId));
 
         if (!job.getRecruiter().getId().equals(recruiterId)) {
@@ -135,7 +135,7 @@ public class JobPostingServiceImpl implements JobPostingService {
     @Override
     @Transactional
     public void delete(Long recruiterId, Long jobId) {
-        JobPosting job = jobPostingRepository.findById(jobId)
+        JobPosting job = jobPostingRepository.findByIdWithRecruiterAndCompany(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("Job not found: " + jobId));
         if (!job.getRecruiter().getId().equals(recruiterId)) {
             throw new IllegalArgumentException("Unauthorized: cannot delete job of another recruiter");
@@ -147,7 +147,7 @@ public class JobPostingServiceImpl implements JobPostingService {
     @Override
     @Transactional(readOnly = true)
     public Optional<JobPosting> getById(Long id) {
-        return jobPostingRepository.findById(id);
+        return jobPostingRepository.findByIdWithRecruiterAndCompany(id);
     }
 
     @Override
@@ -196,7 +196,7 @@ public class JobPostingServiceImpl implements JobPostingService {
     @Override
     @Transactional(readOnly = true)
     public JobPostingResponse getJobDetailPublic(Long id) {
-        JobPosting job = jobPostingRepository.findById(id)
+        JobPosting job = jobPostingRepository.findByIdWithRecruiterAndCompany(id)
                 .orElseThrow(() -> new IllegalArgumentException("Job not found: " + id));
         // if (job.getStatus() == JobStatus.DELETED || job.getStatus() == JobStatus.HIDDEN || job.getStatus() == JobStatus.BLOCKED) {
         //      throw new IllegalArgumentException("Công việc này chưa được công khai hoặc đã bị đóng.");
