@@ -38,6 +38,7 @@ Thumbs.db
 # Environment / Config
 # =========================
 .env
+.env.*
 
 application.properties
 !src/main/resources/application.properties
