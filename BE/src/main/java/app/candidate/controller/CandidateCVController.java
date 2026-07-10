@@ -8,6 +8,7 @@ import app.util.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,7 @@ public class CandidateCVController {
 
     // Lấy danh sách CV của User
     @GetMapping("/my-cvs")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<CandidateCV>> getMyCVs() {
         String email = SecurityUtils.getCurrentUserLogin().orElseThrow(() -> new RuntimeException("Unauthorized"));
         User user = userRepository.findByEmail(email).orElseThrow();
