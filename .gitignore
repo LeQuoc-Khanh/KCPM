@@ -27,8 +27,10 @@
 .env
 .env.*
 !.env.example
+BE/src/main/resources/application-local.properties
 scripts/db-migration/.env
 scripts/render-postgres-migration/.env
 scripts/render-postgres-migration/*.sql
-BE/src/main/resources/application-local.properties
 *.sql
+scripts/postman/careermate-integration.postman_collection.json
+BE/docs/api/khanh-api-spec.md

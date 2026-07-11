@@ -125,6 +125,37 @@ class NotificationIntegrationTest {
         assertThat(notificationRepository.findById(second.getId())).isEmpty();
     }
 
+    @Test
+    void getNotifications_withoutToken_shouldReturnUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/notifications"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void markAsRead_notificationBelongsToAnotherUser_currentImplementationStillMarksAsRead() throws Exception {
+        User candidate = saveUser("feature7-owner-gap-candidate@example.com", "Feature7 Owner Gap Candidate",
+                UserRole.CANDIDATE);
+        User otherUser = saveUser("feature7-owner-gap-other@example.com", "Feature7 Owner Gap Other",
+                UserRole.CANDIDATE);
+
+        Notification otherNotification = notificationRepository.save(Notification.builder()
+                .recipient(otherUser)
+                .title("Private notification")
+                .message("Should not be mutable by candidate")
+                .type("INFO")
+                .createdAt(LocalDateTime.now())
+                .build());
+
+        mockMvc.perform(put("/api/notifications/{id}/read", otherNotification.getId())
+                        .header("Authorization", bearer(candidate)))
+                .andExpect(status().isOk());
+
+        assertThat(notificationRepository.findById(otherNotification.getId()))
+                .get()
+                .extracting(Notification::isRead)
+                .isEqualTo(true);
+    }
+
     private User saveUser(String email, String fullName, UserRole role) {
         return userRepository.save(User.builder()
                 .fullName(fullName)

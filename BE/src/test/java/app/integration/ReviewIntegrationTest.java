@@ -130,6 +130,57 @@ class ReviewIntegrationTest {
                 });
     }
 
+    @Test
+    void createReview_withoutToken_shouldReturnUnauthorized() throws Exception {
+        String requestBody = objectMapper.writeValueAsString(new ReviewPayload(
+                1L,
+                5,
+                "Unauthorized review"
+        ));
+
+        mockMvc.perform(post("/api/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void createReview_sameUserAndCompanyTwice_shouldKeepSingleReviewAndReturnServerError() throws Exception {
+        User candidate = saveUser("feature7-duplicate-candidate-review@example.com", "Feature7 Duplicate Reviewer",
+                UserRole.CANDIDATE);
+        User recruiter = saveUser("feature7-duplicate-recruiter-review@example.com", "Feature7 Duplicate Recruiter",
+                UserRole.RECRUITER);
+        Company company = companyRepository.save(Company.builder()
+                .name("Feature7 Duplicate Review Company")
+                .description("Company used by duplicate review integration test")
+                .industry("Software")
+                .email("feature7-duplicate-company@example.com")
+                .recruiter(recruiter)
+                .build());
+
+        String requestBody = objectMapper.writeValueAsString(new ReviewPayload(
+                company.getId(),
+                4,
+                "First review"
+        ));
+
+        mockMvc.perform(post("/api/reviews")
+                        .header("Authorization", bearer(candidate))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/reviews")
+                        .header("Authorization", bearer(candidate))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.success").value(false));
+
+        assertThat(reviewRepository.findByCompanyIdOrderByCreatedAtDesc(company.getId()))
+                .hasSize(1);
+    }
+
     private User saveUser(String email, String fullName, UserRole role) {
         return userRepository.save(User.builder()
                 .fullName(fullName)
