@@ -82,6 +82,47 @@ class PaymentIntegrationTest {
                 .isBeforeOrEqualTo(LocalDateTime.now().plusDays(30).plusSeconds(2));
     }
 
+    @Test
+    void paymentEndpoint_withoutToken_shouldReturnUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/payment/vip-upgrade"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void paymentEndpoint_adminUser_shouldReturnBadRequestAndNotChangeRole() throws Exception {
+        User admin = saveUser("feature7-payment-admin@example.com", "Feature7 Payment Admin",
+                UserRole.ADMIN);
+
+        mockMvc.perform(post("/api/payment/vip-upgrade")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isBadRequest());
+
+        User unchanged = userRepository.findById(admin.getId()).orElseThrow();
+        assertThat(unchanged.getUserRole()).isEqualTo(UserRole.ADMIN);
+        assertThat(unchanged.getVipExpirationDate()).isNull();
+    }
+
+    @Test
+    void paymentEndpoint_shouldUpgradeRecruiterToVipAndPersistExpirationDate() throws Exception {
+        User recruiter = saveUser("feature7-payment-recruiter@example.com", "Feature7 Payment Recruiter",
+                UserRole.RECRUITER);
+
+        LocalDateTime beforeExpectedExpiration = LocalDateTime.now().plusDays(30).minusSeconds(2);
+
+        mockMvc.perform(post("/api/payment/vip-upgrade")
+                        .header("Authorization", bearer(recruiter)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.id").value(recruiter.getId()))
+                .andExpect(jsonPath("$.user.email").value(recruiter.getEmail()))
+                .andExpect(jsonPath("$.user.userRole").value(UserRole.RECRUITER_VIP.name()));
+
+        User upgraded = userRepository.findById(recruiter.getId()).orElseThrow();
+        assertThat(upgraded.getUserRole()).isEqualTo(UserRole.RECRUITER_VIP);
+        assertThat(upgraded.getVipExpirationDate())
+                .isAfterOrEqualTo(beforeExpectedExpiration)
+                .isBeforeOrEqualTo(LocalDateTime.now().plusDays(30).plusSeconds(2));
+    }
+
     private User saveUser(String email, String fullName, UserRole role) {
         return userRepository.save(User.builder()
                 .fullName(fullName)

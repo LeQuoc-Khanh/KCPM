@@ -6,21 +6,28 @@ import app.auth.model.enums.UserRole;
 import app.auth.model.enums.UserStatus;
 import app.auth.repository.UserRepository;
 import app.auth.security.JwtTokenProvider;
+import app.gamification.event.PointEvent;
 import app.gamification.model.LeaderboardPointsLog;
 import app.gamification.model.LeaderboardScore;
 import app.gamification.model.UserPointAction;
 import app.gamification.repository.LeaderboardPointsLogRepository;
 import app.gamification.repository.LeaderboardScoreRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -63,6 +70,9 @@ class GamificationIntegrationTest {
 
     @Autowired
     private LeaderboardPointsLogRepository leaderboardPointsLogRepository;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @AfterEach
     void cleanDatabase() {
@@ -128,6 +138,40 @@ class GamificationIntegrationTest {
                 .andExpect(jsonPath("$.data[0].userId").value(secondCandidate.getId()))
                 .andExpect(jsonPath("$.data[0].actionType").value(UserPointAction.LOGIN_DAILY.name()))
                 .andExpect(jsonPath("$.data[0].points").value(5));
+    }
+
+    @Test
+    @Disabled("Current H2 test database cannot execute the PostgreSQL ON CONFLICT native query in LeaderboardScoreRepository.upsertScore")
+    void pointEvent_validCandidateAction_shouldCreatePointsLogAndScoresForAllPeriods() {
+        User candidate = saveUser("feature7-event-candidate@example.com", "Feature7 Event Candidate",
+                UserRole.CANDIDATE);
+
+        eventPublisher.publishEvent(new PointEvent(
+                this,
+                candidate.getId(),
+                "CANDIDATE",
+                UserPointAction.APPLY,
+                9001L
+        ));
+
+        List<LeaderboardPointsLog> logs = leaderboardPointsLogRepository.findAll();
+        assertThat(logs).hasSize(1);
+        LeaderboardPointsLog log = logs.get(0);
+        assertThat(log.getUserId()).isEqualTo(candidate.getId());
+        assertThat(log.getRole()).isEqualTo("CANDIDATE");
+        assertThat(log.getActionType()).isEqualTo(UserPointAction.APPLY.name());
+        assertThat(log.getPoints()).isEqualTo(UserPointAction.APPLY.getPoints());
+        assertThat(log.getRefId()).isEqualTo(9001L);
+
+        List<LeaderboardScore> scores = leaderboardScoreRepository.findAll();
+        assertThat(scores).hasSize(4);
+        Map<String, Integer> scoreByPeriod = scores.stream()
+                .collect(Collectors.toMap(LeaderboardScore::getPeriodType, LeaderboardScore::getScore));
+        assertThat(scoreByPeriod)
+                .containsEntry("WEEK", UserPointAction.APPLY.getPoints())
+                .containsEntry("MONTH", UserPointAction.APPLY.getPoints())
+                .containsEntry("YEAR", UserPointAction.APPLY.getPoints())
+                .containsEntry("ALL_TIME", UserPointAction.APPLY.getPoints());
     }
 
     private User saveUser(String email, String fullName, UserRole role) {
