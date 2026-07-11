@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/matching/recruiter")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('RECRUITER')") // Bảo vệ toàn bộ class
+@PreAuthorize("hasAnyAuthority('RECRUITER', 'RECRUITER_VIP', 'ADMIN')") // Bảo vệ toàn bộ class
 public class RecruiterMatchingController {
 
     private final JobMatchingService jobMatchingService;
