@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -51,23 +53,46 @@ public class CloudinaryService {
      * Public ID: Tự động (Cloudinary sinh) hoặc Random để tránh trùng
      */
     public String uploadAvatar(MultipartFile file) {
+        validateImageFile(file);
+
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> uploadResult = cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.asMap(
-                    "resource_type", "image",      // Chỉ định rõ là ảnh
-                    "folder", "phantichcv/avatar"             // Yêu cầu: lưu vào folder tên "avatar"
+                    "resource_type", "image",
+                    "folder", "phantichcv/avatar"
                 )
             );
 
             return uploadResult.get("secure_url").toString();
 
         } catch (IOException e) {
-            throw new RuntimeException("Lỗi upload avatar lên Cloudinary: " + e.getMessage());
+            throw new RuntimeException("Loi upload avatar len Cloudinary: " + e.getMessage());
         }
     }
 
+    private void validateImageFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Avatar file is required");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+            throw new IllegalArgumentException("Avatar must be an image file");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || !hasAllowedImageExtension(originalFilename)) {
+            throw new IllegalArgumentException("Avatar file type is not supported");
+        }
+    }
+
+    private boolean hasAllowedImageExtension(String filename) {
+        String lowerFilename = filename.toLowerCase(Locale.ROOT);
+        Set<String> allowedExtensions = Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp");
+        return allowedExtensions.stream().anyMatch(lowerFilename::endsWith);
+    }
     public String uploadCompanyImage(MultipartFile file) {
         try {
             @SuppressWarnings("unchecked")
@@ -84,3 +109,5 @@ public class CloudinaryService {
         }
     }
 }
+
+
