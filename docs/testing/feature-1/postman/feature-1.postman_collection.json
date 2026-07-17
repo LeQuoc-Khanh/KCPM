@@ -1,0 +1,816 @@
+{
+  "info": {
+    "_postman_id": "b59119a8-aa1e-4c35-a024-6ed3495d58f8",
+    "name": "CareerMate Feature 1 Testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "46627443",
+    "_collection_link": "https://go.postman.co/collection/46627443-b59119a8-aa1e-4c35-a024-6ed3495d58f8?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "[Integration] API Flows",
+      "item": [
+        {
+          "name": "TC_1.1 Register new candidate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();\r",
+                  "const data = json.data || json;\r",
+                  "\r",
+                  "pm.test(\"TC_1.1 status is 201\", function () {\r",
+                  "  pm.response.to.have.status(201);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"TC_1.1 user created\", function () {\r",
+                  "  pm.expect(json.success).to.eql(true);\r",
+                  "});\r",
+                  "\r",
+                  "if (data.user && data.user.email) {\r",
+                  "  pm.environment.set(\"new_candidate_email\", data.user.email);\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"fullName\": \"Integration Candidate\",\r\n  \"email\": \"candidate{{$timestamp}}@test.com\",\r\n  \"password\": \"Candidatetest123\",\r\n  \"userRole\": \"CANDIDATE\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_base_url}}/api/auth/register",
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC_1.2 Login success and receive token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();\r",
+                  "const data = json.data || json;\r",
+                  "\r",
+                  "pm.test(\"TC_1.2 status is 200\", function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"TC_1.2 accessToken returned\", function () {\r",
+                  "  pm.expect(data.accessToken).to.exist;\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"TC_1.2 refreshToken returned\", function () {\r",
+                  "  pm.expect(data.refreshToken).to.exist;\r",
+                  "});\r",
+                  "\r",
+                  "pm.environment.set(\"candidate_token\", data.accessToken);\r",
+                  "pm.environment.set(\"candidate_refresh_token\", data.refreshToken);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"{{candidate_email}}\",\r\n  \"password\": \"{{candidate_password}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_base_url}}/api/auth/login",
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC_1.3 Login failed with wrong password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"TC_1.3 wrong password returns 401\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"{{candidate_email}}\",\r\n  \"password\": \"WrongPassword123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_base_url}}/api/auth/login",
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC_1.4 Refresh token success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();\r",
+                  "const data = json.data || json;\r",
+                  "\r",
+                  "pm.test(\"TC_1.4 status is 200\", function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"TC_1.4 new accessToken returned\", function () {\r",
+                  "  pm.expect(data.accessToken).to.exist;\r",
+                  "});\r",
+                  "\r",
+                  "pm.environment.set(\"candidate_token\", data.accessToken);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"refreshToken\": \"{{candidate_refresh_token}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{api_base_url}}/api/auth/refresh-token",
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh-token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC_1.5 Candidate accesses authenticated API",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"TC_1.5 candidate can access authenticated API\", function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"TC_1.5 response is JSON\", function () {\r",
+                  "  pm.response.to.be.json;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{candidate_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/api/users/me",
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC_1.6 Candidate forbidden from admin API",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"TC_1.6 candidate is forbidden from admin API\", function () {\r",
+                  "    pm.response.to.have.status(403);\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"TC_1.6 response reports failure\", function () {\r",
+                  "    pm.expect(pm.response.json().success).to.eql(false);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{candidate_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/api/admin/users",
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC_1.7 Logout success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"TC_1.7 logout returns 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{candidate_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/api/auth/logout",
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC_1.8 Protected API rejects invalid token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"TC_1.8 invalid token returns 401\", function () {\r",
+                  "    pm.response.to.have.status(401);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "invalid.jwt.token",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/api/users/me",
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "[Black-box BVA]",
+      "item": [
+        {
+          "name": "[BVA-C] Change newPassword",
+          "item": [
+            {
+              "name": "01 Login bằng mật khẩu gốc",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "const caseId = pm.iterationData.get(\"case_id\");\r",
+                      "const length = Number(\r",
+                      "    pm.iterationData.get(\"target_length\")\r",
+                      ");\r",
+                      "\r",
+                      "const newPassword =\r",
+                      "    \"Aa1\" + \"b\".repeat(length - 3);\r",
+                      "\r",
+                      "pm.environment.set(\"bva_case_id\", caseId);\r",
+                      "pm.environment.set(\r",
+                      "    \"bva_new_password\",\r",
+                      "    newPassword\r",
+                      ");"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Login with original password succeeds\", function () {\r",
+                      "    pm.response.to.have.status(200);\r",
+                      "});\r",
+                      "\r",
+                      "const json = pm.response.json();\r",
+                      "const data = json.data || json;\r",
+                      "\r",
+                      "pm.environment.set(\r",
+                      "    \"bva_candidate_token\",\r",
+                      "    data.accessToken\r",
+                      ");"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"email\": \"{{bva_candidate_email}}\",\r\n  \"password\": \"{{bva_original_password}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_base_url}}/api/auth/login",
+                  "host": [
+                    "{{api_base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02 Đổi sang mật khẩu BVA",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const caseId =\r",
+                      "    pm.environment.get(\"bva_case_id\");\r",
+                      "\r",
+                      "pm.test(`${caseId} boundary password is accepted`, function () {\r",
+                      "    pm.response.to.have.status(200);\r",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bva_candidate_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"oldPassword\": \"{{bva_original_password}}\",\r\n  \"newPassword\": \"{{bva_new_password}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_base_url}}/api/users/change-password",
+                  "host": [
+                    "{{api_base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "change-password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03 Đăng nhập bằng mật khẩu BVA",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"BVA password can be used to login\", function () {\r",
+                      "    pm.response.to.have.status(200);\r",
+                      "});\r",
+                      "\r",
+                      "const json = pm.response.json();\r",
+                      "const data = json.data || json;\r",
+                      "\r",
+                      "pm.test(\"New access token is returned\", function () {\r",
+                      "    pm.expect(data.accessToken).to.exist;\r",
+                      "});\r",
+                      "\r",
+                      "pm.environment.set(\r",
+                      "    \"bva_candidate_token\",\r",
+                      "    data.accessToken\r",
+                      ");"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"email\": \"{{bva_candidate_email}}\",\r\n  \"password\": \"{{bva_new_password}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_base_url}}/api/auth/login",
+                  "host": [
+                    "{{api_base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "04 Khôi phục mật khẩu ban đầu",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Original password is restored\", function () {\r",
+                      "    pm.response.to.have.status(200);\r",
+                      "});\r",
+                      "\r",
+                      "if (pm.response.code === 200) {\r",
+                      "    pm.environment.unset(\"bva_new_password\");\r",
+                      "    pm.environment.unset(\"bva_candidate_token\");\r",
+                      "}"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{bva_candidate_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"oldPassword\": \"{{bva_new_password}}\",\r\n  \"newPassword\": \"{{bva_original_password}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_base_url}}/api/users/change-password",
+                  "host": [
+                    "{{api_base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "change-password"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "[BVA-A] Register fullName",
+          "item": [
+            {
+              "name": "Run fullName boundaries",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "const caseId = pm.iterationData.get(\"case_id\");\r",
+                      "const length = Number(pm.iterationData.get(\"target_length\"));\r",
+                      "\r",
+                      "pm.variables.set(\"bva_case_id\", caseId);\r",
+                      "pm.variables.set(\"bva_full_name\", \"A\".repeat(length));\r",
+                      "pm.variables.set(\r",
+                      "    \"bva_email\",\r",
+                      "    `bva.name.${Date.now()}.${pm.info.iteration}@example.com`\r",
+                      ");"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const caseId = pm.variables.get(\"bva_case_id\");\r",
+                      "\r",
+                      "pm.test(`${caseId} returns 201`, function () {\r",
+                      "    pm.response.to.have.status(201);\r",
+                      "});\r",
+                      "\r",
+                      "pm.test(`${caseId} registration succeeds`, function () {\r",
+                      "    pm.expect(pm.response.json().success).to.eql(true);\r",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"fullName\": \"Le\",\r\n  \"email\": \"{{bva_email}}\",\r\n  \"password\": \"Aa1234\",\r\n  \"userRole\": \"CANDIDATE\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_base_url}}/api/auth/register",
+                  "host": [
+                    "{{api_base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "[BVA-B] Register password",
+          "item": [
+            {
+              "name": "Run password boundaries",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "const caseId = pm.iterationData.get(\"case_id\");\r",
+                      "const length = Number(pm.iterationData.get(\"target_length\"));\r",
+                      "\r",
+                      "const password = \"Aa1\" + \"b\".repeat(length - 3);\r",
+                      "\r",
+                      "pm.variables.set(\"bva_case_id\", caseId);\r",
+                      "pm.variables.set(\"bva_password\", password);\r",
+                      "pm.variables.set(\r",
+                      "    \"bva_email\",\r",
+                      "    `bva.password.${Date.now()}.${pm.info.iteration}@example.com`\r",
+                      ");"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const caseId = pm.variables.get(\"bva_case_id\");\r",
+                      "\r",
+                      "pm.test(`${caseId} returns 201`, function () {\r",
+                      "    pm.response.to.have.status(201);\r",
+                      "});\r",
+                      "\r",
+                      "pm.test(`${caseId} registration succeeds`, function () {\r",
+                      "    pm.expect(pm.response.json().success).to.eql(true);\r",
+                      "});"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"fullName\": \"BVA Candidate\",\r\n  \"email\": \"{{bva_email}}\",\r\n  \"password\": \"Abc123456\",\r\n  \"userRole\": \"CANDIDATE\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{api_base_url}}/api/auth/register",
+                  "host": [
+                    "{{api_base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
