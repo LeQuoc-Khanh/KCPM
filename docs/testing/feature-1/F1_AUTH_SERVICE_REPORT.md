@@ -148,11 +148,11 @@ Ba bộ dữ liệu BVA được chạy độc lập bằng Postman Collection R
 
 ![Postman Runner - BVA password](evidence/bva-b-password-runner.png)
 
-- **BVA-C - `newPassword`:** một chuỗi bốn request gồm đăng nhập, đổi mật khẩu, đăng nhập bằng mật khẩu biên và khôi phục mật khẩu; 5/5 assertion Pass, 0 Fail, 0 Error.
+- **BVA-C - `newPassword`:** chuỗi bốn request được chạy với 5 iteration tương ứng các độ dài 6, 7, 28, 49 và 50; 25/25 assertion Pass, 0 Fail, 0 Error.
 
 ![Postman Runner - BVA newPassword](evidence/bva-c-new-password-runner.png)
 
-> Tổng cộng có 15 bộ dữ liệu Standard BVA và 25 assertion Postman Pass. Số assertion lớn hơn số test case vì một test case có thể kiểm tra đồng thời HTTP status và nội dung response.
+> Tổng cộng có 15 bộ dữ liệu Standard BVA và 45/45 assertion Postman Pass. Số assertion lớn hơn số test case vì một test case có thể kiểm tra đồng thời HTTP status và nội dung response.
 
 ---
 
@@ -188,30 +188,40 @@ Tám luồng Integration được chạy tuần tự trên API deploy bằng Pos
 
 # PHẦN B. KIỂM THỬ WHITE-BOX VÀ ĐỘ BAO PHỦ
 
-## 7. Rà soát code và xác định nhánh
+## 7. Static Review / Code Audit và xác định nhánh
 
-### 7.1. AuthService
+Đây là phần **kiểm thử tĩnh (Static Review/Code Audit)** của Feature 1. Nhóm đọc trực tiếp năm production service, không chạy chương trình, để xác định contract, validation, exception, role và dependency cần mock trước khi thiết kế Unit Test. Chỉ các method thực sự tồn tại trong source code được đưa vào phạm vi.
 
-| Method | Nhánh/decision cần bao phủ |
-|---|---|
-| `register()` | Email tồn tại/không; role ADMIN/khác; avatar có/không; upload thành công/lỗi; Candidate/Recruiter |
-| `verifyEmail()` | User tồn tại/không; đã verified/chưa; code đúng/sai/null |
-| `resendVerificationCode()` | User tồn tại/không; PENDING/đã verified |
-| `login()` | Credentials đúng/sai; verified; banned; maintenance; ADMIN/non-ADMIN |
-| `googleAuth()` | User mới/cũ; Google ID có/thiếu; banned; Candidate/Recruiter |
-| `refreshToken()` | Token tồn tại/không; còn hạn/hết hạn |
-| `logout()` | User tồn tại/không |
-| `forgotPassword()` | Email tồn tại/không |
-| `resetPassword()` | Token tồn tại/không; đã dùng/chưa; còn hạn/hết hạn |
+### 7.1. Ma trận Code Audit
 
-### 7.2. Bốn service còn lại
+| Class | Method | Input chính | Output/side effect | Validation và decision | Exception cần kiểm tra | Role | Dependency |
+|---|---|---|---|---|---|---|---|
+| `AuthService` | `register()` | `RegisterRequest`, avatar tùy chọn | `AuthResponse`, lưu User, có thể tạo Company | Email trùng; cấm ADMIN; avatar có/không; upload thành công/lỗi; Candidate/Recruiter | Email đã tồn tại; role không hợp lệ | Candidate, Recruiter | `UserRepository`, `CompanyRepository`, `PasswordEncoder`, `CloudinaryService`, `EmailService` |
+| `AuthService` | `verifyEmail()` | Email, verification code | Kích hoạt và lưu User | User có/không; đã xác minh/chưa; code đúng/sai | Không tìm thấy User; đã xác minh; code sai | User chưa xác minh | `UserRepository` |
+| `AuthService` | `resendVerificationCode()` | Email | Sinh code mới và gửi email | User có/không; trạng thái pending/đã xác minh | Không tìm thấy User; tài khoản đã xác minh | User chưa xác minh | `UserRepository`, `EmailService` |
+| `AuthService` | `login()` | `LoginRequest` | Access token, refresh token, thông tin User | Credentials; email verified; banned; maintenance; ADMIN/non-ADMIN | Sai xác thực; chưa xác minh; bị khóa; maintenance | Candidate, Recruiter, Admin | `AuthenticationManager`, `UserRepository`, `JwtTokenProvider`, `RefreshTokenService`, `SystemSettingService` |
+| `AuthService` | `googleAuth()` | `GoogleAuthRequest` | Tạo/cập nhật User và trả token | User mới/cũ; Google ID thiếu/có; banned; Candidate/Recruiter | Google token/User không hợp lệ; tài khoản bị khóa | Candidate, Recruiter | `GoogleOAuthService`, `UserRepository`, `CompanyRepository`, token services |
+| `AuthService` | `refreshToken()` | `RefreshTokenRequest` | Access token mới | Token tìm thấy/không; còn hạn/hết hạn | Token không tồn tại hoặc hết hạn | User đã đăng nhập | `RefreshTokenService`, `JwtTokenProvider` |
+| `AuthService` | `logout()` | Email | Xóa refresh token | User tồn tại/không | Không tìm thấy User | User đã đăng nhập | `UserRepository`, `RefreshTokenService` |
+| `AuthService` | `forgotPassword()` | Email | Tạo reset token và gửi email | Email tồn tại/không | Không tìm thấy User | Public | `UserRepository`, `PasswordResetTokenRepository`, `EmailService` |
+| `AuthService` | `resetPassword()` | Reset token, mật khẩu mới | Đổi mật khẩu, đánh dấu token đã dùng | Token tồn tại; đã dùng; còn hạn | Token sai, đã dùng hoặc hết hạn | Public có reset token | `PasswordResetTokenRepository`, `PasswordEncoder`, `UserRepository` |
+| `EmailService` | `sendVerificationEmail()` | Email, code | Tạo và gửi MIME message | Dữ liệu hợp lệ; mail dependency thành công/thất bại | Exception từ mail sender được service bắt và ghi log | N/A | `JavaMailSender` |
+| `EmailService` | `sendResetPasswordEmail()` | Email, token | Tạo và gửi reset-password email | Dữ liệu hợp lệ; mail dependency thành công/thất bại | Exception từ mail sender được service bắt và ghi log | N/A | `JavaMailSender` |
+| `GoogleOAuthService` | `verifyGoogleToken()` | Google ID token | `Map` thông tin Google user | Token null/rỗng/malformed; verifier trả payload/null | `InvalidTokenException`; lỗi verifier được bọc lại | Google user | `GoogleIdTokenVerifier` |
+| `RefreshTokenService` | `createRefreshToken()` | User | Refresh token được lưu | Expiry phải ở tương lai | Lỗi repository nếu có | User | `RefreshTokenRepository` |
+| `RefreshTokenService` | `verifyExpiration()` | Refresh token | Trả token hợp lệ hoặc xóa token | Expiry trước/sau thời điểm hiện tại | Token hết hạn | User | `RefreshTokenRepository`, hệ thống thời gian |
+| `RefreshTokenService` | `findByToken()` | Token string | Refresh token | Repository có/không có dữ liệu | Token không tồn tại | User | `RefreshTokenRepository` |
+| `RefreshTokenService` | `deleteByUser()`, `deleteExpiredTokens()` | User hoặc thời điểm hiện tại | Xóa token | Đúng User; đúng mốc thời gian | Lỗi repository nếu có | User/System job | `RefreshTokenRepository` |
+| `UserService` | `getCurrentUser()` | Principal hiện tại | `UserResponse` | User tồn tại/không | Không tìm thấy User | Authenticated user | `UserRepository`, security context |
+| `UserService` | `updateProfile()` | Full name, image URL | Lưu và trả profile mới | Input có giá trị so với null/blank | Không tìm thấy User | Authenticated user | `UserRepository` |
+| `UserService` | `changePassword()` | Old/new password | Lưu password mới, thu hồi token | Old password đúng/sai | Không tìm thấy User; mật khẩu cũ sai | Authenticated user | `UserRepository`, `PasswordEncoder`, `RefreshTokenService` |
+| `UserService` | `deleteAccount()` | Principal hiện tại | Thu hồi token và xóa User | User tồn tại/không | Không tìm thấy User | Authenticated user | `UserRepository`, `RefreshTokenService` |
 
-| Service | Method | Nhánh/decision cần bao phủ |
-|---|---|---|
-| `EmailService` | `sendVerificationEmail()`, `sendResetPasswordEmail()` | Gửi thành công; dependency ném exception và service xử lý |
-| `GoogleOAuthService` | `verifyGoogleToken()` | Payload hợp lệ; verifier trả null; token malformed; verifier ném exception |
-| `RefreshTokenService` | `verifyExpiration()`, `findByToken()` | Còn hạn/hết hạn; tìm thấy/không tìm thấy |
-| `UserService` | `getCurrentUser()`, `updateProfile()`, `changePassword()`, `deleteAccount()` | User có/không; field có giá trị/null/blank; old password đúng/sai |
+### 7.2. Kết quả Audit
+
+- Phạm vi production code: **5 service class, 21 public method** (không tính helper/lambda do compiler tạo).
+- Điểm rủi ro cao: xác thực trạng thái tài khoản, token hết hạn, role/maintenance, reset password và dependency ngoại vi Google/Email.
+- Kết quả Audit là đầu vào trực tiếp cho Test Condition tại mục 8 và ma trận Unit Test tại mục 10; đây không phải kết quả test động và không cộng vào số lượng 64 lượt Unit Test.
 
 ---
 
@@ -299,6 +309,22 @@ BUILD SUCCESS
 ---
 
 ## 10. Danh sách 64 lượt White-box Unit Test
+
+### 10.0. Ma trận thiết kế Unit Test chi tiết
+
+| Test class / phạm vi | Test ID | Arrange và dependency mock | Act | Expected result / assertion | Nhánh được bao phủ |
+|---|---|---|---|---|---|
+| `AuthServiceTest.register()` | `UT-F1-001`, `002`, `010` - `014` | Mock email chưa tồn tại/trùng; role; avatar null/có; Cloudinary success/exception | Gọi `register()` | Tạo User đúng role/default; từ chối email trùng/ADMIN; dùng URL upload hoặc avatar mặc định; tạo Company cho Recruiter | Email true/false; ADMIN true/false; avatar true/false; upload success/catch; Candidate/Recruiter |
+| `AuthServiceTest.verify/resend` | `UT-F1-003`, `004`, `015` - `019` | Mock Optional User rỗng/có; verified flag; verification code | Gọi `verifyEmail()` hoặc `resendVerificationCode()` | Lưu trạng thái verified hoặc ném đúng exception; gửi code mới khi pending | User found; verified; code match; resend allowed |
+| `AuthServiceTest.login()` | `UT-F1-006`, `007`, `020` - `024` | Mock authentication success/failure; User verified/banned; maintenance flag; role | Gọi `login()` | Trả token khi hợp lệ; từ chối sai mật khẩu, missing User, unverified, banned; chỉ Admin qua maintenance | Authentication; status; banned; maintenance; ADMIN/non-ADMIN |
+| `AuthServiceTest.googleAuth()` | `UT-F1-025` - `028` | Mock Google payload; User mới/cũ; Google ID; banned; role | Gọi `googleAuth()` | Tạo/cập nhật User, tạo Company cho Recruiter hoặc ném exception khi banned | Existing/new User; Google ID; banned; Candidate/Recruiter |
+| `AuthServiceTest.token/password` | `UT-F1-005`, `008`, `009`, `029` - `036` | Mock refresh/reset token hợp lệ, thiếu, hết hạn, đã dùng; User có/không | Gọi refresh/logout/forgot/reset | Trả access token mới, xóa token, gửi email hoặc ném đúng exception; password được encode khi reset hợp lệ | Token found/expiry/used; User found; success/exception |
+| `EmailServiceTest` | `UT-F1-037` - `040` | Mock `JavaMailSender` và MIME message; success hoặc dependency exception | Gửi verification/reset email | `send()` được gọi với message đúng; exception được service xử lý theo contract | Normal path và catch path của hai method |
+| `GoogleOAuthServiceTest` | `UT-F1-041` - `047` | Mock verifier với null, empty, malformed, valid payload, null result, `IOException` | Gọi `verifyGoogleToken()` | Trả đủ Google user fields hoặc ném `InvalidTokenException` có message phù hợp | Input invalid; verifier success/null/exception |
+| `RefreshTokenServiceTest` | `UT-F1-048` - `054` | Mock repository; expiry tương lai/quá khứ; Optional có/rỗng | Create, verify, find và delete token | Lưu token đúng expiry; trả token hợp lệ; xóa và ném khi hết hạn; delegate đúng repository | Time boundary; Optional present/empty; delete paths |
+| `UserServiceTest` | `UT-F1-055` - `064` | Mock current User có/rỗng; input profile đầy đủ/null/blank; password match/mismatch | Get/update/change/delete User | Trả DTO, chỉ cập nhật field hợp lệ, encode password, thu hồi token và xóa User hoặc ném exception | User found; field present/blank; password match; delete success/failure |
+
+Danh sách dưới đây là ánh xạ một-một giữa mỗi lượt JUnit được Maven thực thi và Test ID dùng trong báo cáo. Với `ParameterizedTest`, mỗi bộ dữ liệu được tính là một lượt test riêng.
 
 ### 10.1. AuthServiceTest - 36 lượt
 
