@@ -134,7 +134,7 @@ class JobPostingServiceCoreTest {
     void TC_3_3_getPublicJobDetailSuccessfully() {
 
         // Arrange
-        when(jobPostingRepository.findById(1L))
+        when(jobPostingRepository.findByIdWithRecruiterAndCompany(1L))
                 .thenReturn(java.util.Optional.of(jobPosting));
 
         when(recruitmentMapper.toJobPostingResponse(jobPosting))
@@ -152,7 +152,7 @@ class JobPostingServiceCoreTest {
         assertEquals("Java Developer", result.getTitle());
         assertEquals(5, result.getApplicationCount());
 
-        verify(jobPostingRepository).findById(1L);
+        verify(jobPostingRepository).findByIdWithRecruiterAndCompany(1L); // Nhớ đổi ID tương ứng 1L hoặc 999L
         verify(jobApplicationRepository).countByJobPostingId(1L);
         verify(recruitmentMapper).toJobPostingResponse(jobPosting);
     }

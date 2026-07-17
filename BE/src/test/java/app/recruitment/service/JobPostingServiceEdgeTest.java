@@ -71,7 +71,7 @@ class JobPostingServiceEdgeTest {
     @Test
     void TC_3_25_getPublicJobDetailWithInvalidId() {
 
-        when(jobPostingRepository.findById(anyLong()))
+        when(jobPostingRepository.findByIdWithRecruiterAndCompany(anyLong()))
                 .thenReturn(Optional.empty());
 
         IllegalArgumentException ex = assertThrows(
@@ -80,7 +80,7 @@ class JobPostingServiceEdgeTest {
 
         assertEquals("Job not found: 999", ex.getMessage());
 
-        verify(jobPostingRepository).findById(999L);
+        verify(jobPostingRepository).findByIdWithRecruiterAndCompany(999L); // Nhớ đổi ID tương ứng 1L hoặc 999L
     }
 
 }
