@@ -19,6 +19,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -55,6 +66,8 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
         when(userRepository.searchUsersExcludeId(1L, "nguyen", null, pageable))
                 .thenReturn(new PageImpl<>(List.of(candidate)));
 
+        Page<AdminUserResponse> result =
+                adminUserService.getAllUsers("nguyen", null, pageable);
         Page<AdminUserResponse> result = adminUserService.getAllUsers("nguyen", null, pageable);
 
         assertFalse(result.isEmpty());
@@ -70,6 +83,8 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
         when(userRepository.searchUsersExcludeId(1L, "", UserRole.CANDIDATE, pageable))
                 .thenReturn(new PageImpl<>(List.of(candidate)));
 
+        Page<AdminUserResponse> result =
+                adminUserService.getAllUsers("", UserRole.CANDIDATE, pageable);
         Page<AdminUserResponse> result = adminUserService.getAllUsers("", UserRole.CANDIDATE, pageable);
 
         assertEquals(UserRole.CANDIDATE, result.getContent().get(0).getUserRole());
@@ -78,11 +93,14 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
     @Test
     @DisplayName("TC_6.4 Lock user successfully")
     void testLockUserSuccessfully() {
+        when(userRepository.findById(2L))
+                .thenReturn(Optional.of(candidate));
         when(userRepository.findById(2L)).thenReturn(Optional.of(candidate));
 
         adminUserService.lockUser(2L);
 
         assertEquals(UserStatus.BANNED, candidate.getStatus());
+
         verify(userRepository).save(candidate);
     }
 
@@ -90,11 +108,15 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
     @DisplayName("TC_6.5 Unlock user successfully")
     void testUnlockUserSuccessfully() {
         candidate.setStatus(UserStatus.BANNED);
+
+        when(userRepository.findById(2L))
+                .thenReturn(Optional.of(candidate));
         when(userRepository.findById(2L)).thenReturn(Optional.of(candidate));
 
         adminUserService.unlockUser(2L);
 
         assertEquals(UserStatus.ACTIVE, candidate.getStatus());
+
         verify(userRepository).save(candidate);
     }
 
@@ -108,6 +130,19 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 .userRole(UserRole.ADMIN)
                 .build();
 
+        when(userRepository.existsByEmail("newadmin@test.com"))
+                .thenReturn(false);
+
+        when(passwordEncoder.encode("123456"))
+                .thenReturn("encodedPassword");
+
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> {
+                    User u = invocation.getArgument(0);
+                    u.setId(10L);
+                    u.setCreatedAt(LocalDateTime.now());
+                    return u;
+                });
         when(userRepository.existsByEmail("newadmin@test.com")).thenReturn(false);
         when(passwordEncoder.encode("123456")).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
@@ -122,6 +157,7 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
         assertNotNull(response);
         assertEquals("newadmin@test.com", response.getUser().getEmail());
         assertNull(response.getGeneratedPassword());
+
         verify(passwordEncoder).encode("123456");
         verify(userRepository).save(any(User.class));
     }
@@ -136,6 +172,19 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 .userRole(UserRole.ADMIN)
                 .build();
 
+        when(userRepository.existsByEmail(any(String.class)))
+                .thenReturn(false);
+
+        when(passwordEncoder.encode(any(String.class)))
+                .thenReturn("encodedPassword");
+
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> {
+                    User u = invocation.getArgument(0);
+                    u.setId(20L);
+                    u.setCreatedAt(LocalDateTime.now());
+                    return u;
+                });
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
@@ -150,6 +199,8 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
         assertNotNull(response);
         assertNotNull(response.getGeneratedPassword());
         assertEquals("admin2@test.com", response.getUser().getEmail());
+
+        verify(passwordEncoder).encode(any(String.class));
         verify(passwordEncoder).encode(anyString());
         verify(userRepository).save(any(User.class));
     }
@@ -161,6 +212,11 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 .userRole(UserRole.RECRUITER)
                 .build();
 
+        when(userRepository.findById(2L))
+                .thenReturn(Optional.of(candidate));
+
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(userRepository.findById(2L)).thenReturn(Optional.of(candidate));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -168,6 +224,7 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
 
         assertNotNull(response);
         assertEquals(UserRole.RECRUITER, response.getUserRole());
+
         verify(userRepository).save(candidate);
     }
 
@@ -181,6 +238,13 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 .userRole(UserRole.ADMIN)
                 .build();
 
+        when(userRepository.existsByEmail("admin@test.com"))
+                .thenReturn(true);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> adminUserService.createUser(request));
+
         when(userRepository.existsByEmail("admin@test.com")).thenReturn(true);
 
         assertThrows(IllegalStateException.class, () -> adminUserService.createUser(request));
@@ -190,6 +254,10 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
     @Test
     @DisplayName("TC_6.10 Cannot lock own account")
     void testCannotLockOwnAccount() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> adminUserService.lockUser(1L));
+
         assertThrows(IllegalStateException.class, () -> adminUserService.lockUser(1L));
         verify(userRepository, never()).save(any(User.class));
     }
@@ -197,6 +265,10 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
     @Test
     @DisplayName("TC_6.11 Cannot unlock own account")
     void testCannotUnlockOwnAccount() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> adminUserService.unlockUser(1L));
+
         assertThrows(IllegalStateException.class, () -> adminUserService.unlockUser(1L));
         verify(userRepository, never()).save(any(User.class));
     }
@@ -212,6 +284,13 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 .status(UserStatus.ACTIVE)
                 .build();
 
+        when(userRepository.findById(3L))
+                .thenReturn(Optional.of(anotherAdmin));
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> adminUserService.lockUser(3L));
+
         when(userRepository.findById(3L)).thenReturn(Optional.of(anotherAdmin));
 
         assertThrows(IllegalStateException.class, () -> adminUserService.lockUser(3L));
@@ -221,6 +300,13 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
     @Test
     @DisplayName("TC_6.13 Lock user not found")
     void testLockUserNotFound() {
+        when(userRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> adminUserService.lockUser(99L));
+
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> adminUserService.lockUser(99L));
@@ -230,6 +316,13 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
     @Test
     @DisplayName("TC_6.14 Unlock user not found")
     void testUnlockUserNotFound() {
+        when(userRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> adminUserService.unlockUser(99L));
+
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> adminUserService.unlockUser(99L));
@@ -242,6 +335,13 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
         UpdateUserRoleRequest request = UpdateUserRoleRequest.builder()
                 .userRole(UserRole.RECRUITER)
                 .build();
+
+        when(userRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> adminUserService.updateUserRole(99L, request));
 
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 

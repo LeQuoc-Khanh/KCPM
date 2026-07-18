@@ -50,6 +50,11 @@ abstract class BaseAdminServiceTest {
     void setUp() {
         SecurityContextHolder.setContext(securityContext);
 
+        lenient().when(securityContext.getAuthentication())
+                .thenReturn(authentication);
+
+        lenient().when(authentication.getName())
+                .thenReturn("admin@test.com");
         lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
         lenient().when(authentication.getName()).thenReturn("admin@test.com");
 
