@@ -1,0 +1,331 @@
+{
+  "info": {
+    "_postman_id": "a4c6cc04-a8a0-4dbe-8afe-feature700001",
+    "name": "KCPM - Feature 7 Automated Tests",
+    "description": "Automated API tests for Notification, Review, Gamification and VIP. Run requests in collection order.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{candidate_token}}", "type": "string" }]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json' });"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "api_base_url", "value": "http://localhost:8080" },
+    { "key": "candidate_email", "value": "candidate@example.com" },
+    { "key": "candidate_password", "value": "password" },
+    { "key": "candidate_token", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "companyId", "value": "1" },
+    { "key": "notificationId", "value": "" },
+    { "key": "reviewComment", "value": "Postman automated review" }
+  ],
+  "item": [
+    {
+      "name": "01 - Authentication",
+      "item": [
+        {
+          "name": "AUTH-01 Login candidate and save token",
+          "auth": { "type": "noauth" },
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{candidate_email}}\",\n  \"password\": \"{{candidate_password}}\"\n}"
+            },
+            "url": "{{api_base_url}}/api/auth/login"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('AUTH-01 | HTTP 200', () => pm.response.to.have.status(200));",
+                "pm.test('AUTH-01 | Response time < 3000 ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));",
+                "const json = pm.response.json();",
+                "pm.test('AUTH-01 | Login success', () => pm.expect(json.success).to.eql(true));",
+                "pm.test('AUTH-01 | Access token exists', () => pm.expect(json.data && json.data.accessToken).to.be.a('string').and.not.empty);",
+                "if (json.data && json.data.accessToken) pm.environment.set('candidate_token', json.data.accessToken);",
+                "if (json.data && json.data.refreshToken) pm.environment.set('candidate_refresh_token', json.data.refreshToken);",
+                "if (json.data && json.data.user && json.data.user.id != null) pm.collectionVariables.set('userId', String(json.data.user.id));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "AUTH-02 Protected endpoint without token",
+          "auth": { "type": "noauth" },
+          "request": { "method": "GET", "header": [], "url": "{{api_base_url}}/api/notifications" },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('AUTH-02 | Request is rejected', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "02 - Notification",
+      "item": [
+        {
+          "name": "NOT-01 Get current user notifications",
+          "request": { "method": "GET", "header": [], "url": "{{api_base_url}}/api/notifications" },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('NOT-01 | HTTP 200', () => pm.response.to.have.status(200));",
+                "const data = pm.response.json();",
+                "pm.test('NOT-01 | Response is an array', () => pm.expect(data).to.be.an('array'));",
+                "if (Array.isArray(data) && data.length > 0) pm.collectionVariables.set('notificationId', String(data[0].id));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "NOT-02 Mark notification as read",
+          "request": { "method": "PUT", "header": [], "url": "{{api_base_url}}/api/notifications/{{notificationId}}/read" },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('notificationId')) console.warn('NOT-02 requires at least one notification for this user.');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id = pm.collectionVariables.get('notificationId');",
+                  "if (id) pm.test('NOT-02 | HTTP 200', () => pm.response.to.have.status(200));",
+                  "else pm.test.skip('NOT-02 | No notificationId: prepare notification data first');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "NOT-03 Mark all as read",
+          "request": { "method": "PUT", "header": [], "url": "{{api_base_url}}/api/notifications/read-all" },
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('NOT-03 | HTTP 200', () => pm.response.to.have.status(200));"] }
+          }]
+        },
+        {
+          "name": "NOT-04 Missing notification ID is harmless in current implementation",
+          "request": { "method": "PUT", "header": [], "url": "{{api_base_url}}/api/notifications/9223372036854775807/read" },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('NOT-04 | Current implementation returns 200', () => pm.response.to.have.status(200));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "03 - Review",
+      "item": [
+        {
+          "name": "REV-01 Get public company reviews",
+          "auth": { "type": "noauth" },
+          "request": { "method": "GET", "header": [], "url": "{{api_base_url}}/api/reviews/company/{{companyId}}" },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('REV-01 | HTTP 200', () => pm.response.to.have.status(200));",
+                "pm.test('REV-01 | Response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "REV-02 Get public average rating",
+          "auth": { "type": "noauth" },
+          "request": { "method": "GET", "header": [], "url": "{{api_base_url}}/api/reviews/company/{{companyId}}/average" },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('REV-02 | HTTP 200', () => pm.response.to.have.status(200));",
+                "pm.test('REV-02 | Average is numeric', () => pm.expect(pm.response.json()).to.be.a('number'));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "REV-03 Create review",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": {{companyId}},\n  \"rating\": 5,\n  \"comment\": \"{{reviewComment}}\"\n}"
+            },
+            "url": "{{api_base_url}}/api/reviews"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('REV-03 | HTTP 200', () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) {",
+                "  const json = pm.response.json();",
+                "  pm.test('REV-03 | Rating is 5', () => pm.expect(json.rating).to.eql(5));",
+                "  pm.test('REV-03 | Review ID exists', () => pm.expect(json.id).to.exist);",
+                "}"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "REV-04 Duplicate review characterization",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyId\": {{companyId}},\n  \"rating\": 5,\n  \"comment\": \"{{reviewComment}} duplicate\"\n}"
+            },
+            "url": "{{api_base_url}}/api/reviews"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('REV-04 | Current implementation returns 500', () => pm.response.to.have.status(500));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "04 - Gamification",
+      "item": [
+        {
+          "name": "GAM-01 Get leaderboard",
+          "request": { "method": "GET", "header": [], "url": "{{api_base_url}}/api/leaderboard?role=CANDIDATE&period=WEEK&limit=50" },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('GAM-01 | HTTP 200', () => pm.response.to.have.status(200));",
+                "const json = pm.response.json();",
+                "pm.test('GAM-01 | Success and array data', () => { pm.expect(json.success).to.eql(true); pm.expect(json.data).to.be.an('array'); });",
+                "pm.test('GAM-01 | At most 50 rows', () => pm.expect(json.data.length).to.be.at.most(50));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "GAM-02 Get my rank",
+          "request": { "method": "GET", "header": [], "url": "{{api_base_url}}/api/leaderboard/me?userId={{userId}}&role=CANDIDATE&period=WEEK" },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('GAM-02 | HTTP 200', () => pm.response.to.have.status(200));",
+                "pm.test('GAM-02 | Success true', () => pm.expect(pm.response.json().success).to.eql(true));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "GAM-03 Get missions",
+          "request": { "method": "GET", "header": [], "url": "{{api_base_url}}/api/leaderboard/missions?role=CANDIDATE&userId={{userId}}" },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('GAM-03 | HTTP 200', () => pm.response.to.have.status(200));",
+                "const json = pm.response.json();",
+                "pm.test('GAM-03 | Mission data is array', () => pm.expect(json.data).to.be.an('array'));"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "GAM-04 Authenticated user can access logs (current security config)",
+          "request": { "method": "GET", "header": [], "url": "{{api_base_url}}/api/leaderboard/logs?limit=10" },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('GAM-04 | Current implementation returns 200', () => pm.response.to.have.status(200));",
+                "pm.test('GAM-04 | Log data is array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "05 - VIP (run last because role and tokens change)",
+      "item": [
+        {
+          "name": "VIP-01 Upgrade current user",
+          "request": { "method": "POST", "header": [], "url": "{{api_base_url}}/api/payment/vip-upgrade" },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('VIP-01 | HTTP 200', () => pm.response.to.have.status(200));",
+                "if (pm.response.code === 200) {",
+                "  const json = pm.response.json();",
+                "  pm.test('VIP-01 | New tokens exist', () => { pm.expect(json.accessToken).to.be.a('string').and.not.empty; pm.expect(json.refreshToken).to.be.a('string').and.not.empty; });",
+                "  pm.test('VIP-01 | Role has VIP suffix', () => pm.expect(String(json.user.userRole)).to.match(/_VIP$/));",
+                "  pm.environment.set('candidate_token', json.accessToken);",
+                "  if (json.refreshToken) pm.environment.set('candidate_refresh_token', json.refreshToken);",
+                "}"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "VIP-02 Endpoint without token",
+          "auth": { "type": "noauth" },
+          "request": { "method": "POST", "header": [], "url": "{{api_base_url}}/api/payment/vip-upgrade" },
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": ["pm.test('VIP-02 | Request is rejected', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"] }
+          }]
+        }
+      ]
+    }
+  ]
+}
