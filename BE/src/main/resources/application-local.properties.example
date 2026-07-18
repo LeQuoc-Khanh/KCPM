@@ -1,0 +1,52 @@
+# Copy file nay thanh application-local.properties va dien gia tri that tren may local.
+# Khong commit application-local.properties.
+#
+# Chay local bang PowerShell:
+# $env:SPRING_PROFILES_ACTIVE="local"
+# mvn clean spring-boot:run
+
+# Local cache
+spring.cache.type=simple
+
+# Server
+server.port=8080
+cors.allowed-origins=http://localhost:3000,http://localhost:5173,http://localhost:8081
+
+# Database local hoac Render External Database URL
+spring.datasource.url=
+spring.datasource.username=
+spring.datasource.password=
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.open-in-view=false
+
+# JWT
+jwt.secret=
+jwt.access-token-expiration=1800000
+jwt.refresh-token-expiration=36000000
+
+# Google OAuth2
+google.client-id=
+google.client-secret=
+
+# Cloudinary
+cloudinary.cloud-name=
+cloudinary.api-key=
+cloudinary.api-secret=
+
+# Google Gemini
+gemini.api.keys=
+
+# Email Configuration
+spring.mail.host=smtp.gmail.com
+spring.mail.port=465
+spring.mail.username=
+spring.mail.password=
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.socketFactory.port=465
+spring.mail.properties.mail.smtp.socketFactory.class=javax.net.ssl.SSLSocketFactory
+spring.mail.properties.mail.smtp.socketFactory.fallback=false

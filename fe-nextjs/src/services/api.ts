@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 // Nếu bạn chưa có removeToken thì tạm dùng localStorage.removeItem(key) bên dưới.
 
 const api = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
   headers: {
     "Content-Type": "application/json",
   },

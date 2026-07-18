@@ -132,7 +132,7 @@ public class CandidateService {
         CandidateProfile profile = getProfile(userId);
         User user = profile.getUser();
 
-        String avatarUrl = cloudinaryService.uploadFile(file);
+        String avatarUrl = cloudinaryService.uploadAvatar(file);
 
         user.setProfileImageUrl(avatarUrl);
         userRepository.save(user);

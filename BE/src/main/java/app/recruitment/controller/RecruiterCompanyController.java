@@ -1,5 +1,7 @@
 package app.recruitment.controller;
 
+import jakarta.validation.Valid;
+
 import app.content.model.Company;
 import app.recruitment.dto.request.UpdateCompanyRequest;
 import app.recruitment.service.CompanyService;
@@ -32,7 +34,8 @@ public class RecruiterCompanyController {
     // 2. API cập nhật thông tin công ty
     // PUT: /api/recruiter/company/me
     @PutMapping("/me")
-    public ResponseEntity<Company> updateMyCompany(@RequestBody UpdateCompanyRequest request) {
+    public ResponseEntity<Company> updateMyCompany(
+        @Valid @RequestBody UpdateCompanyRequest request) {
         // Lấy ID của recruiter đang đăng nhập
         Long recruiterId = securityUtils.getCurrentUserId();
         return ResponseEntity.ok(companyService.updateCompany(recruiterId, request));

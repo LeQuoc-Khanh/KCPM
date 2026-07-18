@@ -55,6 +55,8 @@ abstract class BaseAdminServiceTest {
 
         lenient().when(authentication.getName())
                 .thenReturn("admin@test.com");
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getName()).thenReturn("admin@test.com");
 
         admin = User.builder()
                 .id(1L)

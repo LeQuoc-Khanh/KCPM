@@ -22,3 +22,15 @@
 ### Mac OS ###
 .DS_Store
 .fake
+
+### Environment / database migration ###
+.env
+.env.*
+!.env.example
+BE/src/main/resources/application-local.properties
+scripts/db-migration/.env
+scripts/render-postgres-migration/.env
+scripts/render-postgres-migration/*.sql
+*.sql
+scripts/postman/careermate-integration.postman_collection.json
+BE/docs/api/khanh-api-spec.md

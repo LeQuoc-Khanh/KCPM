@@ -30,6 +30,9 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class AdminCoreServiceTest extends BaseAdminServiceTest {
 
@@ -65,6 +68,7 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
 
         Page<AdminUserResponse> result =
                 adminUserService.getAllUsers("nguyen", null, pageable);
+        Page<AdminUserResponse> result = adminUserService.getAllUsers("nguyen", null, pageable);
 
         assertFalse(result.isEmpty());
 
@@ -81,6 +85,7 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
 
         Page<AdminUserResponse> result =
                 adminUserService.getAllUsers("", UserRole.CANDIDATE, pageable);
+        Page<AdminUserResponse> result = adminUserService.getAllUsers("", UserRole.CANDIDATE, pageable);
 
         assertEquals(UserRole.CANDIDATE, result.getContent().get(0).getUserRole());
     }
@@ -90,6 +95,7 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
     void testLockUserSuccessfully() {
         when(userRepository.findById(2L))
                 .thenReturn(Optional.of(candidate));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(candidate));
 
         adminUserService.lockUser(2L);
 
@@ -105,6 +111,7 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
 
         when(userRepository.findById(2L))
                 .thenReturn(Optional.of(candidate));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(candidate));
 
         adminUserService.unlockUser(2L);
 
@@ -136,6 +143,14 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                     u.setCreatedAt(LocalDateTime.now());
                     return u;
                 });
+        when(userRepository.existsByEmail("newadmin@test.com")).thenReturn(false);
+        when(passwordEncoder.encode("123456")).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(10L);
+            user.setCreatedAt(LocalDateTime.now());
+            return user;
+        });
 
         CreateAdminUserResponse response = adminUserService.createUser(request);
 
@@ -170,6 +185,14 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                     u.setCreatedAt(LocalDateTime.now());
                     return u;
                 });
+        when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(20L);
+            user.setCreatedAt(LocalDateTime.now());
+            return user;
+        });
 
         CreateAdminUserResponse response = adminUserService.createUser(request);
 
@@ -178,6 +201,7 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
         assertEquals("admin2@test.com", response.getUser().getEmail());
 
         verify(passwordEncoder).encode(any(String.class));
+        verify(passwordEncoder).encode(anyString());
         verify(userRepository).save(any(User.class));
     }
 
@@ -193,6 +217,8 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
 
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(candidate));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AdminUserResponse response = adminUserService.updateUserRole(2L, request);
 
@@ -219,6 +245,9 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 IllegalStateException.class,
                 () -> adminUserService.createUser(request));
 
+        when(userRepository.existsByEmail("admin@test.com")).thenReturn(true);
+
+        assertThrows(IllegalStateException.class, () -> adminUserService.createUser(request));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -229,6 +258,7 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 IllegalStateException.class,
                 () -> adminUserService.lockUser(1L));
 
+        assertThrows(IllegalStateException.class, () -> adminUserService.lockUser(1L));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -239,6 +269,7 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 IllegalStateException.class,
                 () -> adminUserService.unlockUser(1L));
 
+        assertThrows(IllegalStateException.class, () -> adminUserService.unlockUser(1L));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -260,6 +291,9 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 IllegalStateException.class,
                 () -> adminUserService.lockUser(3L));
 
+        when(userRepository.findById(3L)).thenReturn(Optional.of(anotherAdmin));
+
+        assertThrows(IllegalStateException.class, () -> adminUserService.lockUser(3L));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -273,6 +307,9 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 EntityNotFoundException.class,
                 () -> adminUserService.lockUser(99L));
 
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> adminUserService.lockUser(99L));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -286,6 +323,9 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 EntityNotFoundException.class,
                 () -> adminUserService.unlockUser(99L));
 
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> adminUserService.unlockUser(99L));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -303,6 +343,9 @@ class AdminCoreServiceTest extends BaseAdminServiceTest {
                 EntityNotFoundException.class,
                 () -> adminUserService.updateUserRole(99L, request));
 
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> adminUserService.updateUserRole(99L, request));
         verify(userRepository, never()).save(any(User.class));
     }
 }

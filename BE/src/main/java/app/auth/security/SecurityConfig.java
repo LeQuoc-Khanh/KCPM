@@ -1,6 +1,9 @@
 package app.auth.security;
 
-import lombok.RequiredArgsConstructor;
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,10 +23,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import app.admin.service.SystemSettingService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.Arrays;
-import java.util.List;
+import app.admin.service.SystemSettingService;
+import app.auth.dto.response.MessageResponse;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -35,6 +40,9 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final AuthEntryPoint authEntryPoint;
     private final SystemSettingService systemSettingService;
+
+    @Value("${cors.allowed-origins}")
+    private String allowedOrigins;
     
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -46,6 +54,14 @@ public class SecurityConfig {
             // Xử lý lỗi 401 Unauthorized
             .exceptionHandling(exception -> exception
                 .authenticationEntryPoint(authEntryPoint)
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    new ObjectMapper().writeValue(
+                            response.getWriter(),
+                            MessageResponse.error("Forbidden: Access is denied")
+                    );
+                })
             )
             // Quản lý session stateless
             .sessionManagement(session -> session
@@ -181,6 +197,12 @@ public class SecurityConfig {
             "http://localhost:5173", // Vite
             "http://localhost:8081"  // Khác
         ));
+        configuration.setAllowedOrigins(
+            Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList()
+        );
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH",  "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

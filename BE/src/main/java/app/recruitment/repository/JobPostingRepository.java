@@ -11,41 +11,47 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
 
-
-    // ✅ thêm EntityGraph ở đây
     @EntityGraph(attributePaths = {"company"})
     Page<JobPosting> findByStatus(JobStatus status, Pageable pageable);
 
-    // ✅ thêm EntityGraph cho findAll paging (admin ALL đang gọi findAll(pageable))
     @Override
     @EntityGraph(attributePaths = {"company"})
     Page<JobPosting> findAll(Pageable pageable);
-  
-    // Các hàm tìm kiếm cơ bản
+
+    @Query("""
+            SELECT j FROM JobPosting j
+            JOIN FETCH j.recruiter r
+            LEFT JOIN FETCH r.company
+            LEFT JOIN FETCH j.company
+            WHERE j.id = :id
+            """)
+    Optional<JobPosting> findByIdWithRecruiterAndCompany(@Param("id") Long id);
+
     List<JobPosting> findByRecruiterId(Long recruiterId);
+
     List<JobPosting> findByTitleContainingIgnoreCase(String keyword);
+
     List<JobPosting> findByStatus(JobStatus status);
 
-    // 1. Hàm đếm cho Dashboard (Sử dụng cho RecruiterDashboardService)
     long countByRecruiterIdAndStatus(Long recruiterId, JobStatus status);
 
-    // Hàm lấy danh sách mới nhất
     List<JobPosting> findTop10ByStatusOrderByCreatedAtDesc(JobStatus status);
 
-    // 2. Hàm tìm kiếm nâng cao (Đã sửa 'OPEN' thành 'PUBLISHED')
     @Query("SELECT j FROM JobPosting j WHERE " +
            "(LOWER(j.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            " LOWER(j.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            " LOWER(j.location) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-           "AND j.status = 'PUBLISHED'") // Sửa thành PUBLISHED để khớp với logic Service
+           "AND j.status = 'PUBLISHED'")
     List<JobPosting> searchJobs(@Param("keyword") String keyword);
 
-    // 3. Hàm lấy jobs kèm skills 
     @Query("SELECT DISTINCT j FROM JobPosting j LEFT JOIN FETCH j.extractedSkills WHERE j.id IN :ids")
     List<JobPosting> findAllByIdsWhithSkills(@Param("ids") List<Long> ids);
+
     List<JobPosting> findByRecruiterIdAndStatusNot(Long recruiterId, JobStatus status);
 }
+
