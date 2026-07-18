@@ -37,6 +37,15 @@ public class GoogleOAuthService {
      */
     @Value("${google.client-id}")
     private String googleClientId;
+
+    // Package-private để có thể thay verifier bằng mock trong unit test độc lập.
+    GoogleIdTokenVerifier createVerifier() {
+        return new GoogleIdTokenVerifier.Builder(
+                new NetHttpTransport(),
+                new GsonFactory())
+                .setAudience(Collections.singletonList(googleClientId))
+                .build();
+    }
     
     /**
      * verifyGoogleToken: Xác thực ID Token do Google trả về và trích xuất thông tin người dùng.
@@ -53,14 +62,7 @@ public class GoogleOAuthService {
      */
     public Map<String, String> verifyGoogleToken(String token) {
         try {
-            // Khởi tạo verifier với HTTP transport và JSON factory (Gson)
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
-                    new NetHttpTransport(),
-                    new GsonFactory()
-                )
-                // Chỉ chấp nhận token có 'audience' khớp clientId của ứng dụng bạn
-                .setAudience(Collections.singletonList(googleClientId))
-                .build();
+            GoogleIdTokenVerifier verifier = createVerifier();
             
             // Xác thực token (kiểm tra chữ ký, issuer, expiry, audience...)
             GoogleIdToken idToken = verifier.verify(token);
